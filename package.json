@@ -1,0 +1,35 @@
+{
+  "name": "eslint-plugin-react-client-components",
+  "version": "1.0.0",
+  "description": "Rules for React 18 client components",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roginfarrer/eslint-plugin-react-client-components.git"
+  },
+  "keywords": [
+    "eslint-plugin",
+    "eslint",
+    "react",
+    "next.js"
+  ],
+  "author": "Rogin Farrer <rogin@roginfarrer.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/roginfarrer/eslint-plugin-react-client-components/issues"
+  },
+  "homepage": "https://github.com/roginfarrer/eslint-plugin-react-client-components#readme",
+  "devDependencies": {
+    "@types/eslint": "^8.21.1",
+    "@types/estree": "^1.0.0",
+    "eslint": "^8.35.0",
+    "prettier": "^2.8.4",
+    "tsup": "^6.6.3",
+    "typescript": "^4.9.5"
+  }
+}
