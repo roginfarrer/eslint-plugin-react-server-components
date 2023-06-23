@@ -8,9 +8,30 @@ import type {
   SpreadElement,
   Super,
 } from "estree";
+import globals from "globals";
+import { reactEvents } from "./react-events";
 
 const hookRegex = /^use[A-Z]/;
 const useClientRegex = /^('|")use client('|")/;
+const { browserGlobals, nodeGlobals } = [
+  ...Object.keys(globals.browser),
+  ...Object.keys(globals.node),
+].reduce<{ browserGlobals: string[]; nodeGlobals: string[] }>(
+  (acc, curr) => {
+    switch (true) {
+      case curr in globals.node && curr in globals.browser:
+        break;
+      case curr in globals.node:
+        acc.nodeGlobals.push(curr);
+        break;
+      case curr in globals.browser:
+        acc.browserGlobals.push(curr);
+        break;
+    }
+    return acc;
+  },
+  { browserGlobals: [], nodeGlobals: [] }
+);
 
 const meta: Rule.RuleModule["meta"] = {
   docs: {
@@ -20,6 +41,17 @@ const meta: Rule.RuleModule["meta"] = {
   },
   type: "problem",
   hasSuggestions: true,
+  fixable: "code",
+  messages: {
+    addUseClientHooks:
+      "Using hooks requires that this file have the 'use client' directive at the top of the file.",
+    addUseClientBrowserAPI:
+      "Using browser APIs requires that this file have the 'use client' directive at the top of the file.",
+    addUseClientCallbacks:
+      "Using event callbacks requires that this file have the 'use client' directive at the top of the file.",
+    removeUseClient:
+      "This file does not require the 'use client' directive, and it should be removed.",
+  },
 };
 
 type RealNode = Node & Rule.NodeParentExtension;
@@ -36,7 +68,7 @@ const create: Rule.RuleModule["create"] = (context) => {
   let hasReported = false;
   const instances = [];
   let hasDirective = false;
-  const sourceCode = context.getSourceCode();
+  const sourceCode = context.sourceCode;
   const firstLine = sourceCode.lines.filter(Boolean)[0].trim();
 
   if (useClientRegex.test(firstLine)) {
@@ -50,18 +82,7 @@ const create: Rule.RuleModule["create"] = (context) => {
     hasReported = true;
     context.report({
       node: expression,
-      message:
-        "Using hooks requires that this file have the 'use client' directive at the top of the file.",
-      // suggest: [
-      //   {
-      //     desc: "add use client at the top of the document",
-      //     fix(fixer) {
-      //       const p = findParentProgram(node.parent);
-      //       const firstToken = sourceCode.getFirstToken(p.body[0]);
-      //       return fixer.insertTextBefore(firstToken!, `'use client';\n\n`);
-      //     },
-      //   },
-      // ],
+      messageId: "addUseClientHooks",
       *fix(fixer) {
         const p = findParentProgram(node.parent);
         const firstToken = sourceCode.getFirstToken(p.body[0]);
@@ -71,6 +92,29 @@ const create: Rule.RuleModule["create"] = (context) => {
   }
 
   return {
+    Program() {
+      const scope = context.getScope();
+      if (!scope) {
+        return;
+      }
+      // @ts-expect-error
+      scope.implicit.left.forEach((reference) => {
+        const name = reference.identifier.name as string;
+        if (browserGlobals.includes(name)) {
+          hasReported = true;
+          instances.push(name);
+          context.report({
+            node: reference.identifier,
+            messageId: "addUseClientBrowserAPI",
+            *fix(fixer) {
+              const p = findParentProgram(reference.identifier);
+              const firstToken = sourceCode.getFirstToken(p.body[0]);
+              yield fixer.insertTextBefore(firstToken!, `'use client';\n`);
+            },
+          });
+        }
+      });
+    },
     VariableDeclaration(node) {
       const declarator = node.declarations[0];
       if (declarator.init && declarator.init.type === "CallExpression") {
@@ -102,6 +146,21 @@ const create: Rule.RuleModule["create"] = (context) => {
         reportMissingDirective(node, expression.callee);
       }
     },
+    JSXAttribute(node: any) {
+      const propName = node.name.name as string;
+      if (reactEvents.includes(propName)) {
+        hasReported = true;
+        context.report({
+          node: node.name,
+          messageId: "addUseClientCallbacks",
+          *fix(fixer) {
+            const p = findParentProgram(node);
+            const firstToken = sourceCode.getFirstToken(p.body[0]);
+            yield fixer.insertTextBefore(firstToken!, `'use client';\n`);
+          },
+        });
+      }
+    },
 
     "ExpressionStatement:exit"(
       node: ExpressionStatement & Rule.NodeParentExtension
@@ -113,19 +172,10 @@ const create: Rule.RuleModule["create"] = (context) => {
       if (instances.length === 0 && hasDirective) {
         context.report({
           node,
-          message:
-            "This file is not using hooks, therefore it should not have the 'use client' directive.",
+          messageId: "removeUseClient",
           fix(fixer) {
             return fixer.remove(node);
           },
-          // suggest: [
-          //   {
-          //     desc: "remove use client at the top of the document",
-          //     fix(fixer) {
-          //       return fixer.remove(node);
-          //     },
-          //   },
-          // ],
         });
       }
     },
