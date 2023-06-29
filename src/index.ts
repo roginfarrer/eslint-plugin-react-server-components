@@ -1,15 +1,13 @@
 import { ClientComponents } from "./rules/use-client";
 
-export default {
-  configs: {
-    plugins: ["react-client-components"],
-    recommended: {
-      rules: {
-        "react-client-components/react-client-components": "error",
-      },
+export const configs = {
+  recommended: {
+    rules: {
+      "react-server-components/use-client": "error",
     },
+    plugins: ["react-server-components"],
   },
-  rules: {
-    "react-client-components": ClientComponents,
-  },
+};
+export const rules = {
+  "use-client": ClientComponents,
 };
