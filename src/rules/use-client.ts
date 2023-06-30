@@ -3,6 +3,7 @@ import type {
   Expression,
   ExpressionStatement,
   Identifier,
+  ImportSpecifier,
   Node,
   Program,
   SpreadElement,
@@ -12,6 +13,8 @@ import { reactEvents } from "./react-events";
 import { JSXOpeningElement } from "estree-jsx";
 // @ts-expect-error
 import Components from "eslint-plugin-react/lib/util/Components";
+// @ts-expect-error
+import componentUtil from "eslint-plugin-react/lib/util/componentUtil";
 
 const HOOK_REGEX = /^use[A-Z]/;
 const useClientRegex = /^('|")use client('|")/;
@@ -51,6 +54,8 @@ const meta: Rule.RuleModule["meta"] = {
       'Browser APIs only work in Client Components. Add the "use client" directive at the top of the file to use it.',
     addUseClientCallbacks:
       'Functions can only be passed as props to Client Components. Add the "use client" directive at the top of the file to use it.',
+    addUseClientClassComponent:
+      'React class components must by Client Components. Add the "use client" directive at the top of the file.',
     removeUseClient:
       "This file does not require the 'use client' directive, and it should be removed.",
   },
@@ -115,7 +120,7 @@ const create = Components.detect(
 
         parentNode = node;
         const scope = context.getScope();
-        // Report variables not declared at all
+        // Collect undeclared variables (ie, used global variables)
         scope.through.forEach((reference) => {
           undeclaredReferences.add(reference.identifier.name);
         });
@@ -125,8 +130,8 @@ const create = Components.detect(
         if (node.source.value === "react") {
           node.specifiers
             .filter((spec) => spec.type === "ImportSpecifier")
-            .forEach((spec) => {
-              // @ts-expect-error
+            .forEach((spac: any) => {
+              const spec = spac as ImportSpecifier;
               reactImports[spec.local.name] = spec.imported.name;
             });
           const namespace = node.specifiers.find(
@@ -150,37 +155,31 @@ const create = Components.detect(
           reportMissingDirective("addUseClientBrowserAPI", node);
         }
       },
-      VariableDeclaration(node) {
-        // Catch using hooks within a component
-        const declarator = node.declarations[0];
+      CallExpression(expression) {
+        let name = "";
+        if (
+          expression.callee.type === "Identifier" &&
+          "name" in expression.callee
+        ) {
+          name = expression.callee.name;
+        } else if (
+          expression.callee.type === "MemberExpression" &&
+          "name" in expression.callee.property
+        ) {
+          name = expression.callee.property.name;
+        }
 
-        if (declarator.init && declarator.init.type === "CallExpression") {
-          const expression = declarator.init;
-          let name = "";
-          if (
-            expression.callee.type === "Identifier" &&
-            "name" in expression.callee
-          ) {
-            name = expression.callee.name;
-          } else if (
-            expression.callee.type === "MemberExpression" &&
-            "name" in expression.callee.property
-          ) {
-            name = expression.callee.property.name;
-          }
-
-          if (
-            HOOK_REGEX.test(name) &&
-            // Is in a function...
-            context.getScope().type === "function" &&
-            // But only if that function is a component
-            Boolean(util.getParentComponent(node))
-          ) {
-            instances.push(name);
-            reportMissingDirective("addUseClientHooks", expression.callee, {
-              hook: name,
-            });
-          }
+        if (
+          HOOK_REGEX.test(name) &&
+          // Is in a function...
+          context.getScope().type === "function" &&
+          // But only if that function is a component
+          Boolean(util.getParentComponent(expression))
+        ) {
+          instances.push(name);
+          reportMissingDirective("addUseClientHooks", expression.callee, {
+            hook: name,
+          });
         }
       },
       MemberExpression(node) {
@@ -264,6 +263,15 @@ const create = Components.detect(
           ) {
             reportMissingDirective("addUseClientCallbacks", attribute);
           }
+        }
+      },
+      ClassDeclaration(node) {
+        if (
+          componentUtil.isES6Component(node, context) ||
+          componentUtil.isES5Component(node, context)
+        ) {
+          instances.push(node.id?.name);
+          reportMissingDirective("addUseClientClassComponent", node);
         }
       },
 

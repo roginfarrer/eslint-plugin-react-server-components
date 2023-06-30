@@ -239,6 +239,45 @@ function App() {
     });
   });
 
+  describe("CLASS COMPONENTS", () => {
+    ruleTester.run("class components", rule, {
+      valid: [
+        {
+          code: `'use client';
+
+import React, {Component} from 'react';
+
+class Foo extends Component {
+  render() {
+    return <div />
+  }
+}`,
+        },
+      ],
+      invalid: [
+        {
+          code: `import React, {Component} from 'react';
+
+class Foo extends Component {
+  render() {
+    return <div />
+  }
+}`,
+          errors: [{ messageId: "addUseClientClassComponent" }],
+          output: `'use client';
+
+import React, {Component} from 'react';
+
+class Foo extends Component {
+  render() {
+    return <div />
+  }
+}`,
+        },
+      ],
+    });
+  });
+
   describe("behaviors", () => {
     describe("comments at the top of the file", () => {
       ruleTester.run("comments", rule, {
