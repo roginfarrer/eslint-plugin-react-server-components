@@ -56,23 +56,6 @@ const meta: Rule.RuleModule["meta"] = {
   },
 };
 
-// type RealNode = Node & Rule.NodeParentExtension;
-
-// function findParentProgram(node: RealNode): Program {
-//   if (node.type === "Program") {
-//     return node;
-//   }
-//   return findParentProgram(node.parent);
-// }
-
-// function getIsType(node: RealNode): boolean {
-//   const { parent } = node;
-//   if (parent.type === "Program") {
-//     return false;
-//   }
-//   return parent.type === "TSTypeReference" || getIsType(parent);
-// }
-
 const create = Components.detect(
   (
     context: Parameters<Rule.RuleModule["create"]>[0],
@@ -81,13 +64,8 @@ const create = Components.detect(
   ): ReturnType<Rule.RuleModule["create"]> => {
     let hasReported = false;
     const instances = [];
-    let hasDirective = false;
+    let isClientComponent = false;
     const sourceCode = context.getSourceCode();
-    const firstLine = sourceCode.lines.filter(Boolean)[0].trim();
-
-    if (useClientRegex.test(firstLine)) {
-      hasDirective = true;
-    }
 
     let parentNode: Program;
 
@@ -96,7 +74,7 @@ const create = Components.detect(
       expression: Node,
       data?: Record<string, any>
     ) {
-      if (hasDirective || hasReported) {
+      if (isClientComponent || hasReported) {
         return;
       }
       hasReported = true;
@@ -105,9 +83,14 @@ const create = Components.detect(
         messageId,
         data,
         *fix(fixer) {
-          // const p = findParentProgram(node);
           const firstToken = sourceCode.getFirstToken(parentNode.body[0]);
-          yield fixer.insertTextBefore(firstToken!, `'use client';\n`);
+          if (firstToken) {
+            const isFirstLine = firstToken.loc.start.line === 1;
+            yield fixer.insertTextBefore(
+              firstToken!,
+              `${isFirstLine ? "" : "\n"}'use client';\n\n`
+            );
+          }
         },
       });
     }
@@ -120,30 +103,22 @@ const create = Components.detect(
 
     return {
       Program(node) {
+        for (const block of node.body) {
+          if (
+            block.type === "ExpressionStatement" &&
+            block.expression.type === "Literal" &&
+            block.expression.value === "use client"
+          ) {
+            isClientComponent = true;
+          }
+        }
+
         parentNode = node;
         const scope = context.getScope();
         // Report variables not declared at all
         scope.through.forEach((reference) => {
           undeclaredReferences.add(reference.identifier.name);
         });
-
-        // // @ts-expect-error
-        // const globals = scope.implicit.left || scope.implicit.leftToBeResolved;
-        // for (const reference of globals) {
-        //   if (getIsType(reference.identifier)) {
-        //     continue;
-        //   }
-        //   const inModuleScope = reference.from.type === "module";
-        //   const isInFunctionComponent = getIsFunctionComponent(reference);
-        //   const name = reference.identifier.name as string;
-        //   if (browserGlobals.includes(name)) {
-        //     // instances.push(name);
-        //     // reportMissingDirective(
-        //     //   "addUseClientBrowserAPI",
-        //     //   reference.identifier
-        //     // );
-        //   }
-        // }
       },
 
       ImportDeclaration(node) {
@@ -299,7 +274,7 @@ const create = Components.detect(
         if (typeof value !== "string" || !useClientRegex.test(value)) {
           return;
         }
-        if (instances.length === 0 && hasDirective) {
+        if (instances.length === 0 && isClientComponent) {
           context.report({
             node,
             messageId: "removeUseClient",
@@ -322,12 +297,5 @@ function isFunction(def: any) {
   }
   return false;
 }
-
-// function getIsFunctionComponent(reference) {
-//   return (
-//     reference.from.block.type === "FunctionDeclaration" &&
-//     /^[A-Z]/.test(reference.from.block.id.name)
-//   );
-// }
 
 export const ClientComponents = { meta, create };
