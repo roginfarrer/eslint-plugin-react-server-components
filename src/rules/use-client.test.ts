@@ -56,6 +56,7 @@ describe("use client", () => {
 document.addEventListener('scroll', () => {})`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const foo = "bar";
 document.addEventListener('scroll', () => {})`,
         },
@@ -67,6 +68,7 @@ function Bar() {
 }`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const foo = "bar";
 function Bar() {
   document.addEventListener('scroll', () => {})
@@ -79,6 +81,7 @@ function Bar() {
 window.addEventListener('scroll', () => {})`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const foo = "bar";
 window.addEventListener('scroll', () => {})`,
         },
@@ -90,6 +93,7 @@ function Bar() {
 }`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const foo = "bar";
 function Bar() {
   window.addEventListener('scroll', () => {})
@@ -101,18 +105,21 @@ function Bar() {
           code: `const observer = new IntersectionObserver()`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const observer = new IntersectionObserver()`,
         },
         {
           code: `const observer = new MutationObserver()`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const observer = new MutationObserver()`,
         },
         {
           code: `const observer = new ResizeObserver()`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const observer = new ResizeObserver()`,
         },
         // GLOBAL PROPERTY REFERENCE
@@ -120,6 +127,7 @@ const observer = new ResizeObserver()`,
           code: `const foo = window.foo;`,
           errors: [{ messageId: "addUseClientBrowserAPI" }],
           output: `'use client';
+
 const foo = window.foo;`,
         },
       ],
@@ -160,6 +168,7 @@ const Button = () => {
             { messageId: "addUseClientHooks", data: { hook: "useState" } },
           ],
           output: `'use client';
+
 import {useState} from 'react';
 const Button = () => {
   const [value, setValue] = useState('');
@@ -176,6 +185,7 @@ const Button = () => {
             { messageId: "addUseClientHooks", data: { hook: "useState" } },
           ],
           output: `'use client';
+
 import * as React from 'react';
 const Button = () => {
   const [value, setValue] = React.useState('');
@@ -192,6 +202,7 @@ const Button = () => {
             { messageId: "addUseClientHooks", data: { hook: "useEffect" } },
           ],
           output: `'use client';
+
 import {useEffect} from 'react';
 const Button = () => {
   useEffect(() => {}, [])
@@ -216,6 +227,7 @@ function App() {
           errors: [{ messageId: "addUseClientCallbacks" }],
           filename: "foo.jsx",
           output: `'use client';
+
 import React from 'react';
 function App() {
   return (
@@ -224,6 +236,52 @@ function App() {
 }`,
         },
       ],
+    });
+  });
+
+  describe("behaviors", () => {
+    describe("comments at the top of the file", () => {
+      ruleTester.run("comments", rule, {
+        valid: [
+          {
+            code: `//top level comment
+'use client';
+import React from 'react';
+function App() {
+  const foo = React.useState();
+  return (
+    <button onClick={() => console.log('hello')}>Hello</button>
+  );
+}`,
+          },
+        ],
+        invalid: [
+          {
+            code: `//top level comment
+import React from 'react';
+function App() {
+  const foo = React.useState();
+  return (
+    <button onClick={() => console.log('hello')}>Hello</button>
+  );
+}`,
+            errors: [
+              { messageId: "addUseClientHooks", data: { hook: "useState" } },
+            ],
+            output: `//top level comment
+
+'use client';
+
+import React from 'react';
+function App() {
+  const foo = React.useState();
+  return (
+    <button onClick={() => console.log('hello')}>Hello</button>
+  );
+}`,
+          },
+        ],
+      });
     });
   });
 });
