@@ -266,10 +266,7 @@ const create = Components.detect(
         }
       },
       ClassDeclaration(node) {
-        if (
-          componentUtil.isES6Component(node, context) ||
-          componentUtil.isES5Component(node, context)
-        ) {
+        if (componentUtil.isES6Component(node, context)) {
           instances.push(node.id?.name);
           reportMissingDirective("addUseClientClassComponent", node);
         }
