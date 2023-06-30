@@ -55,7 +55,7 @@ const meta: Rule.RuleModule["meta"] = {
     addUseClientCallbacks:
       'Functions can only be passed as props to Client Components. Add the "use client" directive at the top of the file to use it.',
     addUseClientClassComponent:
-      'React class components must by Client Components. Add the "use client" directive at the top of the file.',
+      'React Class Components can only be used in Client Components. Add the "use client" directive at the top of the file.',
     removeUseClient:
       "This file does not require the 'use client' directive, and it should be removed.",
   },
