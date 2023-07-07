@@ -3,14 +3,12 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "module": "CommonJS",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "sourceMap": false,
     "strict": true,
     "target": "ESNext",
-    "declaration": true,
-    "emitDeclarationOnly": true
+    "noEmit": true
   },
   "exclude": ["node_modules", "dist"]
 }

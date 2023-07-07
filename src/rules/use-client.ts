@@ -18,24 +18,17 @@ import componentUtil from "eslint-plugin-react/lib/util/componentUtil";
 
 const HOOK_REGEX = /^use[A-Z]/;
 const useClientRegex = /^('|")use client('|")/;
-const { browserGlobals } = [
+const browserOnlyGlobals = [
   ...Object.keys(globals.browser),
   ...Object.keys(globals.node),
-].reduce<{ browserGlobals: string[]; nodeGlobals: string[] }>(
+].reduce<Set<Exclude<keyof typeof globals.browser, keyof typeof globals.node>>>(
   (acc, curr) => {
-    switch (true) {
-      case curr in globals.node && curr in globals.browser:
-        break;
-      case curr in globals.node:
-        acc.nodeGlobals.push(curr);
-        break;
-      case curr in globals.browser:
-        acc.browserGlobals.push(curr);
-        break;
+    if (curr in globals.browser && !(curr in globals.node)) {
+      acc.add(curr as any);
     }
     return acc;
   },
-  { browserGlobals: [], nodeGlobals: [] }
+  new Set()
 );
 
 const meta: Rule.RuleModule["meta"] = {
@@ -150,7 +143,7 @@ const create = Components.detect(
       NewExpression(node) {
         // @ts-expect-error
         const name = node.callee.name;
-        if (undeclaredReferences.has(name) && browserGlobals.includes(name)) {
+        if (undeclaredReferences.has(name) && browserOnlyGlobals.has(name)) {
           instances.push(name);
           reportMissingDirective("addUseClientBrowserAPI", node);
         }
@@ -197,7 +190,7 @@ const create = Components.detect(
         const scopeType = context.getScope().type;
         if (
           undeclaredReferences.has(name) &&
-          browserGlobals.includes(name) &&
+          browserOnlyGlobals.has(name) &&
           (scopeType === "module" || !!util.getParentComponent(node))
         ) {
           instances.push(name);
