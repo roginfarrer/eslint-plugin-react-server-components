@@ -18,10 +18,8 @@ import componentUtil from "eslint-plugin-react/lib/util/componentUtil";
 
 const HOOK_REGEX = /^use[A-Z]/;
 const useClientRegex = /^('|")use client('|")/;
-const browserOnlyGlobals = [
-  ...Object.keys(globals.browser),
-  ...Object.keys(globals.node),
-].reduce<Set<Exclude<keyof typeof globals.browser, keyof typeof globals.node>>>(
+const browserOnlyGlobals = Object.keys(globals.browser)
+  .reduce<Set<Exclude<keyof typeof globals.browser, keyof typeof globals.node>>>(
   (acc, curr) => {
     if (curr in globals.browser && !(curr in globals.node)) {
       acc.add(curr as any);
