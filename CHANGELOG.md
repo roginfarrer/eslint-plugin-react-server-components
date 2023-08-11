@@ -1,5 +1,11 @@
 # eslint-plugin-react-server-components
 
+## 1.1.1
+
+### Patch Changes
+
+- 644f71d: Simplify creation of browser-only globals reference.
+
 ## 1.1.0
 
 ### Minor Changes
