@@ -156,6 +156,13 @@ const Button = () => {
   return <div />;
 }`,
         },
+        {
+          code: `import {useId} from 'react';
+const Button = () => {
+  const id = useId();
+  return <div id={id} />;
+}`,
+        },
       ],
       invalid: [
         {
@@ -207,6 +214,21 @@ import {useEffect} from 'react';
 const Button = () => {
   useEffect(() => {}, [])
   return <div />;
+}`,
+        },
+        {
+          code: `const Button = () => {
+  const id = useIdentifier();
+  return <div id={id} />;
+}`,
+          errors: [
+            { messageId: "addUseClientHooks", data: { hook: "useIdentifier" } },
+          ],
+          output: `'use client';
+
+const Button = () => {
+  const id = useIdentifier();
+  return <div id={id} />;
 }`,
         },
       ],

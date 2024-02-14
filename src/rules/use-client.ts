@@ -16,7 +16,6 @@ import Components from "eslint-plugin-react/lib/util/Components";
 // @ts-expect-error
 import componentUtil from "eslint-plugin-react/lib/util/componentUtil";
 
-const HOOK_REGEX = /^use[A-Z]/;
 const useClientRegex = /^('|")use client('|")/;
 const browserOnlyGlobals = Object.keys(globals.browser)
   .reduce<Set<Exclude<keyof typeof globals.browser, keyof typeof globals.node>>>(
@@ -161,7 +160,7 @@ const create = Components.detect(
         }
 
         if (
-          HOOK_REGEX.test(name) &&
+          isClientOnlyHook(name) &&
           // Is in a function...
           context.getScope().type === "function" &&
           // But only if that function is a component
@@ -206,7 +205,7 @@ const create = Components.detect(
 
         if (
           expression.callee &&
-          HOOK_REGEX.test(expression.callee.name) &&
+          isClientOnlyHook(expression.callee.name) &&
           Boolean(util.getParentComponent(expression))
         ) {
           instances.push(expression.callee.name);
@@ -292,6 +291,11 @@ function isFunction(def: any) {
     return true;
   }
   return false;
+}
+
+function isClientOnlyHook(name: string) {
+  // `useId` is the only hook that's allowed in server components
+  return /^use[A-Z]/.test(name) && name !== 'useId'
 }
 
 export const ClientComponents = { meta, create };
