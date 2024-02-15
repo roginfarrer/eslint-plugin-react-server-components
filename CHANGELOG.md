@@ -1,5 +1,11 @@
 # eslint-plugin-react-server-components
 
+## 1.1.2
+
+### Patch Changes
+
+- c1f4c62: Allow `useId` in server and shared components.
+
 ## 1.1.1
 
 ### Patch Changes
