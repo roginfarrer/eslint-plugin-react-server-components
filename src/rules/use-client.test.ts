@@ -163,6 +163,14 @@ const Button = () => {
   return <div id={id} />;
 }`,
         },
+        {
+          code: `import {useTranslations} from 'next-intl';
+export function Foo() {
+  const t = useTranslations();
+  return <div />;
+}`,
+          options: [{ allowedServerHooks: ["useTranslations"] }],
+        },
       ],
       invalid: [
         {

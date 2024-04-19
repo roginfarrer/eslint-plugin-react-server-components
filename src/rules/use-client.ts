@@ -17,16 +17,20 @@ import Components from "eslint-plugin-react/lib/util/Components";
 import componentUtil from "eslint-plugin-react/lib/util/componentUtil";
 
 const useClientRegex = /^('|")use client('|")/;
-const browserOnlyGlobals = Object.keys(globals.browser)
-  .reduce<Set<Exclude<keyof typeof globals.browser, keyof typeof globals.node>>>(
-  (acc, curr) => {
-    if (curr in globals.browser && !(curr in globals.node)) {
-      acc.add(curr as any);
-    }
-    return acc;
-  },
-  new Set()
-);
+const browserOnlyGlobals = Object.keys(globals.browser).reduce<
+  Set<Exclude<keyof typeof globals.browser, keyof typeof globals.node>>
+>((acc, curr) => {
+  if (curr in globals.browser && !(curr in globals.node)) {
+    acc.add(curr as any);
+  }
+  return acc;
+}, new Set());
+
+type Options = [
+  {
+    allowedServerHooks?: string[];
+  }
+];
 
 const meta: Rule.RuleModule["meta"] = {
   docs: {
@@ -37,6 +41,15 @@ const meta: Rule.RuleModule["meta"] = {
   type: "problem",
   hasSuggestions: true,
   fixable: "code",
+  schema: [
+    {
+      type: "object",
+      properties: {
+        allowedServerHooks: { type: "array", items: { type: "string" } },
+      },
+      additionalProperties: false,
+    },
+  ],
   messages: {
     addUseClientHooks:
       '{{hook}} only works in Client Components. Add the "use client" directive at the top of the file to use it.',
@@ -61,8 +74,13 @@ const create = Components.detect(
     const instances = [];
     let isClientComponent = false;
     const sourceCode = context.getSourceCode();
+    const options = context.options as Options;
 
     let parentNode: Program;
+
+    const isClientOnlyHook = factoryIsClientOnlyHook(
+      options[0]?.allowedServerHooks || []
+    );
 
     function reportMissingDirective(
       messageId: string,
@@ -293,9 +311,15 @@ function isFunction(def: any) {
   return false;
 }
 
-function isClientOnlyHook(name: string) {
-  // `useId` is the only hook that's allowed in server components
-  return /^use[A-Z]/.test(name) && name !== 'useId'
+function factoryIsClientOnlyHook(hooks: string[]) {
+  console.log(hooks);
+  return function isClientOnlyHook(name: string) {
+    // `useId` is the only hook that's allowed in server components
+    if (name === "useId" || hooks.includes(name)) {
+      return false;
+    }
+    return /^use[A-Z]/.test(name);
+  };
 }
 
 export const ClientComponents = { meta, create };
