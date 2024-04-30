@@ -74,13 +74,18 @@ const create = Components.detect(
     const instances = [];
     let isClientComponent = false;
     const sourceCode = context.getSourceCode();
-    const options = context.options as Options;
+    const options = (context.options?.[0] || {}) as Options[0];
 
     let parentNode: Program;
 
-    const isClientOnlyHook = factoryIsClientOnlyHook(
-      options[0]?.allowedServerHooks || []
-    );
+    function isClientOnlyHook(name: string) {
+      return (
+        // `useId` is the only hook that's allowed in server components
+        name !== "useId" &&
+        !(options.allowedServerHooks || []).includes(name) &&
+        /^use[A-Z]/.test(name)
+      );
+    }
 
     function reportMissingDirective(
       messageId: string,
@@ -309,17 +314,6 @@ function isFunction(def: any) {
     return true;
   }
   return false;
-}
-
-function factoryIsClientOnlyHook(hooks: string[]) {
-  console.log(hooks);
-  return function isClientOnlyHook(name: string) {
-    // `useId` is the only hook that's allowed in server components
-    if (name === "useId" || hooks.includes(name)) {
-      return false;
-    }
-    return /^use[A-Z]/.test(name);
-  };
 }
 
 export const ClientComponents = { meta, create };
