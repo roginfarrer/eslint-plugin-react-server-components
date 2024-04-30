@@ -1,0 +1,12 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:react-server-components/recommended"
+  ],
+  "rules": {
+    "react-server-components/use-client": [
+      "error",
+      { "allowedServerHooks": ["useTranslation"] }
+    ]
+  }
+}
