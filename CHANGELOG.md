@@ -1,5 +1,24 @@
 # eslint-plugin-react-server-components
 
+## 1.2.0
+
+### Minor Changes
+
+- 560c8be: Added `allowedServerHooks` option. Hooks specified here will not throw an error in files that do not have the `'use client'` directive.
+
+  Example:
+
+  ```json
+  {
+    "rules": {
+      "react-server-components/use-client": [
+        "error",
+        { "allowedServerHooks": ["useTranslation"] }
+      ]
+    }
+  }
+  ```
+
 ## 1.1.2
 
 ### Patch Changes
