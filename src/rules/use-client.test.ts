@@ -171,6 +171,36 @@ export function Foo() {
 }`,
           options: [{ allowedServerHooks: ["useTranslations"] }],
         },
+        {
+          code: `import React from 'react';
+export function Foo({id}) {
+  const t = React.useState(id);
+  return <button id={t} />;
+}`,
+          options: [{ allowedServerHooks: ["useState"] }],
+        },
+        {
+          code: `import * as React from 'react';
+export function Foo({id}) {
+  const t = React.useState(id);
+  return <button id={t} />;
+}`,
+          options: [{ allowedServerHooks: ["useState"] }],
+        },
+        {
+          code: `import {useMemo} from 'react';
+const Button = ({id}) => {
+  const memoizedId = useMemo(() => id, [id]);
+  return <div id={memoizedId} />;
+}`,
+        },
+        {
+          code: `import React from 'react';
+const Button = ({id}) => {
+  const memoizedId = React.useMemo(() => id, [id]);
+  return <div id={memoizedId} />;
+}`,
+        },
       ],
       invalid: [
         {

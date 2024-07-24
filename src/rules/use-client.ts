@@ -81,9 +81,8 @@ const create = Components.detect(
     function isClientOnlyHook(name: string) {
       return (
         // `useId` is the only hook that's allowed in server components
-        name !== "useId" &&
         !(options.allowedServerHooks || []).includes(name) &&
-        /^use[A-Z]/.test(name)
+        /^use(?!(Id|Memo)$)[A-Z]/.test(name)
       );
     }
 
