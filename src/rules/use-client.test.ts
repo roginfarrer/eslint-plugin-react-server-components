@@ -24,29 +24,21 @@ describe("use client", () => {
           code: 'const foo = "bar"',
         },
         {
-          code: `import {createContext, useContext, useEffect} from 'react';
-    const context = createContext()
-    export function useTheme() {
-      const context = useContext(context);
-      useEffect(() => {
-        window.setTimeout(() => {});
-      });
-      return context;
-    }`,
+          code: `const HREF = typeof window === 'undefined' ? undefined : window.location.href;`,
         },
         {
-          code: `import * as React from 'react';
-    const context = React.createContext()
-    export function Foo() {
-      return <div />;
-    }
-    export function useTheme() {
-      const context = React.useContext(context);
-      React.useEffect(() => {
-        window.setTimeout(() => {});
-      });
-      return context;
-    }`,
+          code: `const HREF = typeof window !== 'undefined' ? window.location.href : '';`,
+        },
+        {
+          code: `const el = typeof document === 'undefined' ? undefined : document.createElement('element');`,
+        },
+        {
+          code: `const foo = "bar";
+function Bar() {
+  if(typeof document !== 'undefined')
+    document.addEventListener('scroll', () => {})
+  return <div />;
+}`,
         },
       ],
       invalid: [
@@ -99,6 +91,82 @@ function Bar() {
   window.addEventListener('scroll', () => {})
   return <div />;
 }`,
+        },
+        {
+          code: `import {createContext, useContext, useEffect} from 'react';
+
+    const context = createContext()
+    export function useTheme() {
+      const context = useContext(context);
+      useEffect(() => {
+        window.setTimeout(() => {});
+      });
+      return context;
+    }`,
+          errors: [{ messageId: "addUseClientBrowserAPI" }],
+          output: `'use client';
+
+import {createContext, useContext, useEffect} from 'react';
+
+    const context = createContext()
+    export function useTheme() {
+      const context = useContext(context);
+      useEffect(() => {
+        window.setTimeout(() => {});
+      });
+      return context;
+    }`,
+        },
+        {
+          code: `import * as React from 'react';
+
+    const context = React.createContext()
+    export function Foo() {
+      return <div />;
+    }
+    export function useTheme() {
+      const context = React.useContext(context);
+      React.useEffect(() => {
+        window.setTimeout(() => {});
+      });
+      return context;
+    }`,
+          errors: [{ messageId: "addUseClientBrowserAPI" }],
+          output: `'use client';
+
+import * as React from 'react';
+
+    const context = React.createContext()
+    export function Foo() {
+      return <div />;
+    }
+    export function useTheme() {
+      const context = React.useContext(context);
+      React.useEffect(() => {
+        window.setTimeout(() => {});
+      });
+      return context;
+    }`,
+        },
+        {
+          code: `const HREF = typeof window === 'undefined' ? window.location.href : window.location.href.slice(0,10);`,
+          errors: [{ messageId: "addUseClientBrowserAPI" }],
+          output: `'use client';
+
+const HREF = typeof window === 'undefined' ? window.location.href : window.location.href.slice(0,10);`,
+        },
+        {
+          code: `let HREF = '';
+    if (typeof window === 'undefined') {
+      HREF = window.location.href;
+    }`,
+          errors: [{ messageId: "addUseClientBrowserAPI" }],
+          output: `'use client';
+
+let HREF = '';
+    if (typeof window === 'undefined') {
+      HREF = window.location.href;
+    }`,
         },
         // OBSERVERS
         {
